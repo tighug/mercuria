@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
 import { config } from "./config.js";
+import { authRoutes } from "./routes/auth.js";
 
 const app = Fastify({ logger: true });
 
@@ -17,5 +18,7 @@ await app.register(rateLimit, {
 });
 
 app.get("/health", async () => ({ status: "ok" }));
+
+app.register(authRoutes);
 
 await app.listen({ port: config.PORT, host: "0.0.0.0" });
