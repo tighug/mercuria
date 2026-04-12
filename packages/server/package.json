@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "test": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
     "@mercuria/shared": "workspace:*",
