@@ -4,6 +4,9 @@ import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
 import { config } from "./config.js";
 import { authRoutes } from "./routes/auth.js";
+import { characterRoutes } from "./routes/characters.js";
+import { conversationRoutes } from "./routes/conversations.js";
+import { messageRoutes } from "./routes/messages.js";
 
 const app = Fastify({ logger: true });
 
@@ -20,5 +23,8 @@ await app.register(rateLimit, {
 app.get("/health", async () => ({ status: "ok" }));
 
 app.register(authRoutes);
+app.register(characterRoutes);
+app.register(conversationRoutes);
+app.register(messageRoutes);
 
 await app.listen({ port: config.PORT, host: "0.0.0.0" });
