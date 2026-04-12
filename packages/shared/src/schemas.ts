@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const emotionSchema = z.enum(["happy", "sad", "surprised", "angry", "neutral"]);
 export const roleSchema = z.enum(["user", "assistant"]);
+export const authProviderSchema = z.enum(["google", "github"]);
 export const aiProviderSchema = z.enum(["claude", "openai"]);
 
 export const createConversationSchema = z.object({
