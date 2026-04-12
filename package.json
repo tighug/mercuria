@@ -1,0 +1,15 @@
+{
+  "name": "mercuria",
+  "private": true,
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:client": "pnpm --filter @mercuria/client dev",
+    "dev:server": "pnpm --filter @mercuria/server dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
