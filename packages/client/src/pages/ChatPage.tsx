@@ -5,12 +5,30 @@ import { Live2DCanvas } from "../components/live2d/Live2DCanvas";
 import { useCharacterStore } from "../stores/characterStore";
 import { useChatStore } from "../stores/chatStore";
 import { useSocket } from "../hooks/useSocket";
+import { useTTS } from "../hooks/useTTS";
+import { useLive2DStore } from "../stores/live2dStore";
 
 export function ChatPage() {
   const { fetchCharacters, selectedCharacter } = useCharacterStore();
   const { fetchConversations, currentConversation } = useChatStore();
+  const { speak } = useTTS();
+  const { lastCompletedMessage, streamEmotion } = useChatStore();
 
   useSocket();
+
+  // Update Live2D emotion when streamEmotion changes
+  useEffect(() => {
+    if (streamEmotion) {
+      useLive2DStore.getState().setEmotion(streamEmotion);
+    }
+  }, [streamEmotion]);
+
+  // TTS: speak when assistant message completes
+  useEffect(() => {
+    if (lastCompletedMessage && lastCompletedMessage.role === "assistant") {
+      speak(lastCompletedMessage.content);
+    }
+  }, [lastCompletedMessage, speak]);
 
   useEffect(() => {
     fetchCharacters();
