@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
 import { config } from "./config.js";
+import { setupSocketIO } from "./ws/chat.js";
 import { authRoutes } from "./routes/auth.js";
 import { characterRoutes } from "./routes/characters.js";
 import { conversationRoutes } from "./routes/conversations.js";
@@ -26,5 +27,7 @@ app.register(authRoutes);
 app.register(characterRoutes);
 app.register(conversationRoutes);
 app.register(messageRoutes);
+
+setupSocketIO(app);
 
 await app.listen({ port: config.PORT, host: "0.0.0.0" });
