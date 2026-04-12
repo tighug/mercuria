@@ -8,6 +8,7 @@ import { authRoutes } from "./routes/auth.js";
 import { characterRoutes } from "./routes/characters.js";
 import { conversationRoutes } from "./routes/conversations.js";
 import { messageRoutes } from "./routes/messages.js";
+import { ttsRoutes } from "./routes/tts.js";
 
 const app = Fastify({ logger: true });
 
@@ -27,6 +28,7 @@ app.register(authRoutes);
 app.register(characterRoutes);
 app.register(conversationRoutes);
 app.register(messageRoutes);
+app.register(ttsRoutes);
 
 setupSocketIO(app);
 
