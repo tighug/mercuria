@@ -17,7 +17,9 @@
     "react-router-dom": "^7.1.0",
     "zustand": "^5.0.0",
     "ky": "^1.7.0",
-    "socket.io-client": "^4.8.0"
+    "socket.io-client": "^4.8.0",
+    "pixi.js": "^7.4.0",
+    "pixi-live2d-display": "^0.4.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
