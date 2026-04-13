@@ -26,7 +26,7 @@ export function ChatPage() {
   // TTS: speak when assistant message completes
   useEffect(() => {
     if (lastCompletedMessage && lastCompletedMessage.role === "assistant") {
-      speak(lastCompletedMessage.content);
+      speak(lastCompletedMessage.id, lastCompletedMessage.content);
     }
   }, [lastCompletedMessage, speak]);
 
