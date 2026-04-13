@@ -3,6 +3,11 @@ export type Role = "user" | "assistant";
 export type AuthProvider = "google" | "github";
 export type AIProvider = "claude" | "openai";
 
+export interface VoiceConfig {
+  speakerId: number;
+  emotionSpeakerMap?: Partial<Record<Emotion, number>>;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -20,7 +25,7 @@ export interface Character {
   description: string;
   systemPrompt: string;
   modelPath: string;
-  voiceConfig: Record<string, unknown>;
+  voiceConfig: VoiceConfig;
   emotionMap: Record<Emotion, string>;
   createdAt: string;
   updatedAt: string;
