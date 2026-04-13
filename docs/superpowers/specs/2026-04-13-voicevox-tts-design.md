@@ -57,19 +57,16 @@ packages/server/src/
 
 ### VoicevoxAdapter
 
-`TTSAdapter` インターフェースの VOICEVOX 実装。
+`TTSAdapter` インターフェースの VOICEVOX 実装。Adapter はシンプルに保ち、話者ID の決定ロジックはルート側で行う。
 
 **処理フロー:**
 
-1. `POST /audio_query?text={text}&speaker={speakerId}` — テキストと話者IDを送り、音声合成用クエリ（JSON）を取得
-2. `POST /synthesis?speaker={speakerId}` — クエリを送り、WAV バイナリを受信
-3. WAV を Buffer として返却
+1. `voiceConfig.speakerId` を取り出す（ルート側で解決済みの値）
+2. `POST /audio_query?text={text}&speaker={speakerId}` — テキストと話者IDを送り、音声合成用クエリ（JSON）を取得
+3. `POST /synthesis?speaker={speakerId}` — クエリを送り、WAV バイナリを受信
+4. WAV を Buffer として返却
 
-**話者（スピーカー）の選択:**
-
-- `Character.voiceConfig` の `speakerId` をデフォルト話者として使用
-- `voiceConfig.emotionSpeakerMap` がある場合、メッセージの `emotion` に対応する話者IDを優先
-- マッピングにない感情は `speakerId`（デフォルト）にフォールバック
+Adapter は渡された `voiceConfig.speakerId` をそのまま使う。感情による話者切り替えはルート側の責務。
 
 **コンストラクタ引数:**
 
@@ -82,9 +79,13 @@ packages/server/src/
 1. `authGuard` で認証チェック
 2. メッセージを DB から取得
 3. 会話の所有者確認
-4. キャラクターの `voiceConfig` と メッセージの `emotion` から話者IDを決定
-5. `VoicevoxAdapter.synthesize(text, voiceConfig)` で WAV 生成
+4. キャラクターの `voiceConfig` と メッセージの `emotion` から最終的な話者IDを決定:
+   - `emotionSpeakerMap[emotion]` があればそれを使用
+   - なければ `speakerId`（デフォルト）にフォールバック
+5. 解決済みの `speakerId` を含む `voiceConfig` で `VoicevoxAdapter.synthesize(text, { speakerId })` を呼び出し
 6. `Content-Type: audio/wav` で返却
+
+`TTSAdapter` インターフェースのシグネチャは変更不要。ルート側で話者IDを解決してから Adapter に渡す。
 
 ### config.ts の拡張
 
@@ -113,11 +114,21 @@ voicevox:
     - "50021:50021"
   volumes:
     - voicevox-cache:/home/user/.local/share/voicevox
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:50021/speakers"]
+    interval: 5s
+    timeout: 3s
+    retries: 10
+    start_period: 30s
+
+volumes:
+  pgdata:          # 既存
+  voicevox-cache:  # 追加
 ```
 
 - CPU 版イメージを使用（GPU 版は `voicevox/voicevox_engine:nvidia-latest` で別途対応可能）
-- `server` サービスに `depends_on: voicevox` を追加
-- キャッシュ用 volume でモデルデータの再ダウンロードを防止
+- `server` サービスに `depends_on: voicevox: condition: service_healthy` を追加（VOICEVOX のモデルロード完了を待機）
+- キャッシュ用 volume でモデルデータの再ダウンロードを防止（トップレベル `volumes` に `voicevox-cache` を宣言）
 - `.env.example` に `VOICEVOX_URL=http://voicevox:50021` を追加
 
 ## クライアントサイド実装
@@ -128,27 +139,46 @@ voicevox:
 packages/client/src/
 ├── hooks/
 │   └── useTTS.ts               # 書き換え: AudioContext ベースに変更
+├── pages/
+│   └── ChatPage.tsx            # 変更: speak() の呼び出しシグネチャ変更
 └── services/
     └── api.ts                   # 既存 (変更なし、ky で /api/tts/:id を fetch)
 ```
 
 ### useTTS.ts の書き換え
 
-**現在:** Web Speech API でテキスト読み上げ → `Math.sin` ベースの疑似リップシンク
+**現在:** `speak(text: string)` — Web Speech API でテキスト読み上げ → `Math.sin` ベースの疑似リップシンク
 
-**変更後:**
+**変更後のシグネチャ:** `speak(messageId: string, fallbackText: string)` — messageId でサーバーから WAV を取得、失敗時は fallbackText で Web Speech API フォールバック
+
+**AudioContext のライフサイクル:** AudioContext はフック内で `useRef` により 1 つだけ保持する。再生のたびに生成・破棄しない（Chrome の同時 AudioContext 数制限を回避）。コンポーネントのアンマウント時のみ `AudioContext.close()` を呼ぶ。
+
+**処理フロー:**
 
 1. `chat:complete` でメッセージ受信
 2. `GET /api/tts/:messageId` で WAV バイナリを fetch
 3. `AudioContext.decodeAudioData()` で WAV をデコード
-4. `AudioBufferSourceNode` で再生
+4. `AudioBufferSourceNode` で再生（AudioContext は `useRef` で保持した単一インスタンスを使用）
 5. `AnalyserNode` で音量をリアルタイム取得（`getByteFrequencyData()`）
 6. `requestAnimationFrame` ループで音量を 0.0〜1.0 に正規化し `setMouthOpen(value)` を更新
-7. 再生完了時にクリーンアップ（AudioContext、アニメーションフレーム）
+7. 再生完了時に `AudioBufferSourceNode` と `requestAnimationFrame` をクリーンアップ（AudioContext は破棄しない）
+
+### ChatPage.tsx の変更
+
+`lastCompletedMessage` 受信時の呼び出しを変更:
+
+```typescript
+// 変更前
+speak(lastCompletedMessage.content)
+
+// 変更後
+speak(lastCompletedMessage.id, lastCompletedMessage.content)
+```
 
 ### Web Speech API フォールバック
 
-- `GET /api/tts/:messageId` が 5xx / ネットワークエラーを返した場合、既存の Web Speech API にフォールバック
+- `GET /api/tts/:messageId` が **5xx またはネットワークエラー** を返した場合のみ、`fallbackText` を使って Web Speech API にフォールバック
+- **4xx エラー（401, 404 等）ではフォールバックしない** — 認証やデータの問題を隠さないため、音声再生をスキップする
 - フォールバックはサイレントに行い、`console.warn` で警告を出力
 
 ### リップシンクの改善
@@ -162,9 +192,22 @@ AudioBufferSourceNode → AnalyserNode → getByteFrequencyData()
 
 発声していない区間は口が閉じ、声の大きさに応じて口が動く自然な動作になる。
 
+## 型定義の追加
+
+`packages/shared/src/types.ts` に `VoiceConfig` 型を追加し、型安全性を確保する:
+
+```typescript
+export interface VoiceConfig {
+  speakerId: number;
+  emotionSpeakerMap?: Partial<Record<Emotion, number>>;
+}
+```
+
+DB スキーマ（`packages/server/src/db/schema.ts`）の `voiceConfig` カラムの型も `$type<Record<string, unknown>>()` から `$type<VoiceConfig>()` に更新する。
+
 ## DB スキーマ変更
 
-新しいテーブルやカラムの追加は不要。既存の `characters.voiceConfig` (JSONB) を活用する。
+新しいテーブルやカラムの追加は不要。既存の `characters.voiceConfig` (JSONB) を活用する。`VoiceConfig` 型による型注釈の変更のみ。
 
 ### シードデータの更新
 
