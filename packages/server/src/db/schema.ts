@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, varchar, timestamp, integer, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import type { VoiceConfig } from "@mercuria/shared";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -19,7 +20,7 @@ export const characters = pgTable("characters", {
   description: text("description").notNull(),
   systemPrompt: text("system_prompt").notNull(),
   modelPath: varchar("model_path", { length: 500 }).notNull(),
-  voiceConfig: jsonb("voice_config").$type<Record<string, unknown>>().notNull().default({}),
+  voiceConfig: jsonb("voice_config").$type<VoiceConfig>().notNull().default({ speakerId: 0 }),
   emotionMap: jsonb("emotion_map").$type<Record<string, string>>().notNull().default({
     happy: "expression_happy",
     sad: "expression_sad",

@@ -10,7 +10,7 @@ const sampleCharacters = [
 口調: カジュアルで親しみやすい。「〜だよ！」「〜だね！」のような話し方。
 必ず返答の冒頭に感情タグ [emotion:happy], [emotion:sad], [emotion:surprised], [emotion:angry], [emotion:neutral] のいずれかを付けてください。タグの後に本文を続けてください。`,
     modelPath: "/models/sample/sample.model3.json",
-    voiceConfig: {},
+    voiceConfig: { speakerId: 3, emotionSpeakerMap: { happy: 4, sad: 5 } },
     emotionMap: {
       happy: "expression_happy",
       sad: "expression_sad",
@@ -27,7 +27,7 @@ const sampleCharacters = [
 口調: 丁寧だが少し冷たい。「〜ですわ」「〜ですけど？」のような話し方。
 必ず返答の冒頭に感情タグ [emotion:happy], [emotion:sad], [emotion:surprised], [emotion:angry], [emotion:neutral] のいずれかを付けてください。タグの後に本文を続けてください。`,
     modelPath: "/models/sample/sample.model3.json",
-    voiceConfig: {},
+    voiceConfig: { speakerId: 2 },
     emotionMap: {
       happy: "expression_happy",
       sad: "expression_sad",

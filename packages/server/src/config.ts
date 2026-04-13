@@ -9,6 +9,10 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
+  VOICEVOX_URL: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().url().optional(),
+  ),
   CLIENT_URL: z.string().default("http://localhost:5173"),
   SERVER_URL: z.string().default("http://localhost:3000"),
   PORT: z.coerce.number().default(3000),
