@@ -1,4 +1,11 @@
 export function LoginPage() {
+  const handleDevLogin = async () => {
+    const res = await fetch("/api/auth/dev", { method: "POST", credentials: "include" });
+    if (res.ok) {
+      window.location.href = "/";
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-6 bg-gray-900">
       <h1 className="text-4xl font-bold text-white">Mercuria</h1>
@@ -16,6 +23,12 @@ export function LoginPage() {
         >
           GitHubでログイン
         </a>
+        <button
+          onClick={handleDevLogin}
+          className="rounded-lg border border-gray-600 px-6 py-3 text-center font-medium text-gray-400 hover:bg-gray-800"
+        >
+          開発用ログイン
+        </button>
       </div>
     </div>
   );

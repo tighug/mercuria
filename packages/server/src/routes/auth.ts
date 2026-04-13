@@ -172,6 +172,45 @@ export async function authRoutes(app: FastifyInstance) {
     }
   });
 
+  // Dev login (development only)
+  app.post("/api/auth/dev", async (request, reply) => {
+    if (process.env.NODE_ENV === "production") {
+      return reply.status(404).send({ error: "Not found" });
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.provider, "github"), eq(users.providerId, "dev-user")));
+
+    let userId: string;
+    if (user) {
+      userId = user.id;
+    } else {
+      const [newUser] = await db.insert(users).values({
+        email: "dev@mercuria.local",
+        name: "開発ユーザー",
+        avatarUrl: null,
+        provider: "github",
+        providerId: "dev-user",
+      }).returning();
+      userId = newUser.id;
+    }
+
+    const accessToken = signAccessToken(userId);
+    const refreshToken = signRefreshToken(userId);
+    await db.insert(refreshTokens).values({
+      userId,
+      token: refreshToken,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
+    reply
+      .setCookie("access_token", accessToken, { httpOnly: true, sameSite: "strict", path: "/", maxAge: 900 })
+      .setCookie("refresh_token", refreshToken, { httpOnly: true, sameSite: "strict", path: "/api/auth", maxAge: 604800 })
+      .send({ ok: true });
+  });
+
   // Get current user
   app.get("/api/auth/me", { preHandler: [authGuard] }, async (request) => {
     const [user] = await db.select().from(users).where(eq(users.id, request.userId));
