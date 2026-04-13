@@ -19,8 +19,12 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://mercuria:mercuria@db:5432/mercuria
+      VOICEVOX_URL: http://voicevox:50021
     depends_on:
-      - db
+      db:
+        condition: service_started
+      voicevox:
+        condition: service_healthy
     volumes:
       - ./packages/server/src:/app/packages/server/src
       - ./packages/shared/src:/app/packages/shared/src
@@ -34,6 +38,17 @@ services:
     volumes:
       - ./packages/client/src:/app/packages/client/src
       - ./packages/shared/src:/app/packages/shared/src
+
+  voicevox:
+    image: voicevox/voicevox_engine:latest
+    ports:
+      - "50021:50021"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:50021/speakers"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
 volumes:
   pgdata:

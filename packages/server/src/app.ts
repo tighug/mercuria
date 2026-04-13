@@ -10,26 +10,30 @@ import { conversationRoutes } from "./routes/conversations.js";
 import { messageRoutes } from "./routes/messages.js";
 import { ttsRoutes } from "./routes/tts.js";
 
-const app = Fastify({ logger: true });
+async function main() {
+  const app = Fastify({ logger: true });
 
-await app.register(cors, {
-  origin: config.CLIENT_URL,
-  credentials: true,
-});
-await app.register(cookie);
-await app.register(rateLimit, {
-  max: 100,
-  timeWindow: "1 minute",
-});
+  await app.register(cors, {
+    origin: config.CLIENT_URL,
+    credentials: true,
+  });
+  await app.register(cookie);
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+  });
 
-app.get("/health", async () => ({ status: "ok" }));
+  app.get("/health", async () => ({ status: "ok" }));
 
-app.register(authRoutes);
-app.register(characterRoutes);
-app.register(conversationRoutes);
-app.register(messageRoutes);
-app.register(ttsRoutes);
+  app.register(authRoutes);
+  app.register(characterRoutes);
+  app.register(conversationRoutes);
+  app.register(messageRoutes);
+  app.register(ttsRoutes);
 
-setupSocketIO(app);
+  setupSocketIO(app);
 
-await app.listen({ port: config.PORT, host: "0.0.0.0" });
+  await app.listen({ port: config.PORT, host: "0.0.0.0" });
+}
+
+main();
