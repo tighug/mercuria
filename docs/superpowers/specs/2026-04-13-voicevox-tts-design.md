@@ -192,6 +192,16 @@ AudioBufferSourceNode → AnalyserNode → getByteFrequencyData()
 
 発声していない区間は口が閉じ、声の大きさに応じて口が動く自然な動作になる。
 
+### stop() 関数
+
+既存の `stop()` 関数を AudioContext ベースに書き換える。再生中の `AudioBufferSourceNode` への参照を `useRef` で保持し、`stop()` 呼び出し時に以下を実行:
+
+1. `sourceNodeRef.current.stop()` — 音声再生を停止
+2. `cancelAnimationFrame` — リップシンクのアニメーションフレームをキャンセル
+3. `setMouthOpen(0)` — 口の状態をリセット
+
+ページ遷移やキャラクター切り替え時に音声が鳴り続けることを防ぐ。
+
 ## 型定義の追加
 
 `packages/shared/src/types.ts` に `VoiceConfig` 型を追加し、型安全性を確保する:
@@ -202,6 +212,8 @@ export interface VoiceConfig {
   emotionSpeakerMap?: Partial<Record<Emotion, number>>;
 }
 ```
+
+また、`Character` インターフェースの `voiceConfig` フィールドも `Record<string, unknown>` から `VoiceConfig` に変更する。
 
 DB スキーマ（`packages/server/src/db/schema.ts`）の `voiceConfig` カラムの型も `$type<Record<string, unknown>>()` から `$type<VoiceConfig>()` に更新する。
 
@@ -232,8 +244,8 @@ voiceConfig: {
 
 ## テスト方針
 
-- `VoicevoxAdapter` のユニットテスト: VOICEVOX API 呼び出しをモックし、正しい話者ID選択ロジックを検証
-- `GET /api/tts/:messageId` の統合テスト: 認証チェック、所有者確認、エラーケースの検証
+- `VoicevoxAdapter` のユニットテスト: VOICEVOX API 呼び出しをモックし、渡された speakerId を正しく VOICEVOX API に転送することを検証
+- `GET /api/tts/:messageId` の統合テスト: 認証チェック、所有者確認、話者ID選択ロジック（emotionSpeakerMap 解決）、エラーケースの検証
 - 手動テスト: Docker Compose 起動後、チャットで応答を受け取り音声が再生されることを確認
 
 ## 将来の拡張ポイント
