@@ -35,9 +35,13 @@ services:
       dockerfile: packages/client/Dockerfile
     ports:
       - "5173:5173"
+    environment:
+      API_URL: http://server:3000
     volumes:
       - ./packages/client/src:/app/packages/client/src
       - ./packages/shared/src:/app/packages/shared/src
+      - ./packages/client/public:/app/packages/client/public
+      - ./packages/client/vite.config.ts:/app/packages/client/vite.config.ts
 
   voicevox:
     image: voicevox/voicevox_engine:latest
