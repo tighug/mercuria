@@ -7,4 +7,4 @@ COPY packages/client/package.json packages/client/
 RUN pnpm install --frozen-lockfile
 COPY packages/shared/ packages/shared/
 COPY packages/client/ packages/client/
-CMD ["pnpm", "--filter", "@mercuria/client", "dev", "--host"]
+CMD ["sh", "-c", "rm -rf packages/client/node_modules/.vite && pnpm --filter @mercuria/client dev --host"]
